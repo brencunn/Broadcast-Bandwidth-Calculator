@@ -1,6 +1,6 @@
 # Broadcast Bandwidth Calculator
 
-Web app for planning broadcast circuits, services, and bandwidth utilization.
+Web app for planning broadcast circuits, services, and bandwidth utilisation.
 
 ## What It Does
 
@@ -23,8 +23,6 @@ Web app for planning broadcast circuits, services, and bandwidth utilization.
 - Access to the GitHub repository
 
 ## 1) Clone From GitHub
-
-The repo is public, so no PAT or SSH setup is required for read/clone access.
 
 ```bash
 git clone --branch main https://github.com/brencunn/Broadcast-Bandwidth-Calculator.git
@@ -87,27 +85,13 @@ Back up with:
 sudo tar -czf bbc-bandwidth-backup-$(date +%F).tar.gz /srv/broadcast-bandwidth-data
 ```
 
-## 6) Day-to-Day Usage
-
-1. Create an event or import an exported event JSON.
-2. Create/select a circuit and define node path.
-3. Set segment max/soft limits.
-4. Add services:
-   - Video: codec/bitrate/audio details
-   - Audio: audio type/channels/bandwidth
-   - Data: bandwidth and direction
-5. Edit existing services via the edit action.
-6. Duplicate services using the copy action when needed.
-7. Manage nodes/equipment in their dedicated views.
-8. Export event JSON from the event menu.
-
-## 7) Import/Export Format
+## 6) Import/Export Format
 
 - Best input format: JSON exported from this app.
 - Event import validates the structure and shows user-facing error toasts for invalid files.
 - For spreadsheet conversion workflows, map sheet data into this exported JSON shape.
 
-## 8) Troubleshooting
+## 7) Troubleshooting
 
 ### App does not load on `http://<server-ip>/`
 
@@ -131,31 +115,7 @@ sudo ufw allow 80/tcp
 sudo ufw status
 ```
 
-### `fatal: detected dubious ownership in repository`
-
-If repo was cloned by a different user:
-
-```bash
-sudo chown -R $USER:$(id -gn) /opt/apps/Broadcast-Bandwidth-Calculator
-```
-
-Then retry pull/build.
-
-### `chown: invalid group: user:user`
-
-Use your real primary group from `id`:
-
-```bash
-id
-sudo chown -R <user>:<primary-group> /opt/apps/Broadcast-Bandwidth-Calculator
-```
-
-### Git auth errors on pull/push
-
-- Public clone does not require auth.
-- Push still requires write access to the repository.
-
-## 9) Useful Commands
+## 8) Useful Commands
 
 ```bash
 # Start or rebuild
