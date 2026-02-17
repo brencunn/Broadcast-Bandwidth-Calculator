@@ -66,6 +66,7 @@ type Action =
   | { type: 'LOAD_STATE'; payload: EventState }
   | { type: 'CREATE_EVENT_WITH_CIRCUIT'; payload: CreateEventPayload }
   | { type: 'ADD_CIRCUIT'; payload: AddCircuitPayload }
+  | { type: 'REORDER_CIRCUITS'; payload: { reorderedCircuitIds: string[] } }
   | { type: 'UPDATE_CIRCUIT'; payload: UpdateCircuitPayload }
   | { type: 'DELETE_CIRCUIT'; payload: { circuitId: string } }
   | { type: 'DELETE_EVENT'; payload: { eventId: string } }
@@ -318,6 +319,31 @@ const eventReducer = (state: EventState, action: Action): EventState => {
             events: newEvents,
             activeCircuitId: newCircuitId,
             activeView: 'circuit',
+        };
+    }
+
+    case 'REORDER_CIRCUITS': {
+        if (!state.activeEventId) return state;
+        const orderedIds = action.payload.reorderedCircuitIds;
+
+        const updatedEvents = state.events.map((event) => {
+            if (event.id !== state.activeEventId) return event;
+
+            const circuitById = new Map(event.circuits.map((circuit) => [circuit.id, circuit]));
+            const reorderedCircuits = orderedIds
+                .map((id) => circuitById.get(id))
+                .filter((circuit): circuit is Circuit => !!circuit);
+
+            if (reorderedCircuits.length !== event.circuits.length) {
+                return event;
+            }
+
+            return { ...event, circuits: reorderedCircuits };
+        });
+
+        return {
+            ...state,
+            events: updatedEvents,
         };
     }
 

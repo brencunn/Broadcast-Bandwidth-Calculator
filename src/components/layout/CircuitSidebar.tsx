@@ -6,12 +6,14 @@ import AddCircuitDialog from "../circuits/AddCircuitDialog";
 import EditCircuitDialog from "../circuits/EditCircuitDialog";
 import { Separator } from "@/components/ui/separator";
 import EventSwitcher from "./EventSwitcher";
-import { Trash2, GitFork, HardDrive } from "lucide-react";
+import { Trash2, GitFork, HardDrive, GripVertical } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { useState, type DragEvent } from "react";
 
 export default function CircuitSidebar() {
     const { activeEvent, activeCircuit, activeView, dispatch } = useEvent();
+    const [draggedCircuitId, setDraggedCircuitId] = useState<string | null>(null);
 
     const handleCircuitSelect = (circuitId: string) => {
         dispatch({ type: 'SET_ACTIVE_CIRCUIT', payload: { circuitId } });
@@ -25,6 +27,48 @@ export default function CircuitSidebar() {
         dispatch({ type: 'DELETE_CIRCUIT', payload: { circuitId } });
     }
 
+    const handleDragStart = (e: DragEvent<HTMLLIElement>, circuitId: string) => {
+        setDraggedCircuitId(circuitId);
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', circuitId);
+    };
+
+    const handleDragOver = (e: DragEvent<HTMLLIElement>) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    };
+
+    const handleDrop = (e: DragEvent<HTMLLIElement>, targetCircuitId: string) => {
+        e.preventDefault();
+        if (!activeEvent || !draggedCircuitId || draggedCircuitId === targetCircuitId) {
+            setDraggedCircuitId(null);
+            return;
+        }
+
+        const currentCircuits = activeEvent.circuits;
+        const draggedIndex = currentCircuits.findIndex((circuit) => circuit.id === draggedCircuitId);
+        const targetIndex = currentCircuits.findIndex((circuit) => circuit.id === targetCircuitId);
+
+        if (draggedIndex === -1 || targetIndex === -1) {
+            setDraggedCircuitId(null);
+            return;
+        }
+
+        const reorderedCircuits = Array.from(currentCircuits);
+        const [movedCircuit] = reorderedCircuits.splice(draggedIndex, 1);
+        reorderedCircuits.splice(targetIndex, 0, movedCircuit);
+
+        dispatch({
+            type: 'REORDER_CIRCUITS',
+            payload: { reorderedCircuitIds: reorderedCircuits.map((circuit) => circuit.id) },
+        });
+        setDraggedCircuitId(null);
+    };
+
+    const handleDragEnd = () => {
+        setDraggedCircuitId(null);
+    };
+
     return (
         <Sidebar>
             <SidebarHeader>
@@ -36,12 +80,22 @@ export default function CircuitSidebar() {
                     <SidebarContent>
                         <SidebarMenu>
                             {activeEvent.circuits.map(circuit => (
-                                <SidebarMenuItem key={circuit.id}>
+                                <SidebarMenuItem
+                                    key={circuit.id}
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, circuit.id)}
+                                    onDragOver={handleDragOver}
+                                    onDrop={(e) => handleDrop(e, circuit.id)}
+                                    onDragEnd={handleDragEnd}
+                                    data-dragging={draggedCircuitId === circuit.id}
+                                    className="data-[dragging=true]:opacity-60"
+                                >
                                     <SidebarMenuButton
                                         isActive={activeView === 'circuit' && circuit.id === activeCircuit?.id}
                                         onClick={() => handleCircuitSelect(circuit.id)}
                                     >
-                                        {circuit.name}
+                                        <GripVertical className="h-4 w-4 text-muted-foreground" />
+                                        <span className="truncate">{circuit.name}</span>
                                     </SidebarMenuButton>
 
                                     <EditCircuitDialog circuit={circuit} />
