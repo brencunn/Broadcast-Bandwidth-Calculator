@@ -809,6 +809,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(eventReducer, initialState);
   const [lastSyncAt, setLastSyncAt] = React.useState<Date | null>(null);
   const [conflictDetected, setConflictDetected] = React.useState(false);
+  const clientIdRef = useRef(generateId());
   const stateRef = useRef<EventState>(state);
   const hasLoadedRef = useRef(false);
   const lastSavedEventsRef = useRef<string>('');
@@ -876,9 +877,11 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
               await fetch(EVENTS_API_URL, {
                   method: 'PUT',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ events: state.events }),
+                  body: JSON.stringify({ events: state.events, clientId: clientIdRef.current }),
               });
               lastLocalSaveAtRef.current = Date.now();
+              lastLoadedEventsRef.current = serialized;
+              localChangeSinceLastLoadRef.current = false;
           } catch (error) {
               console.error('Could not save events to server', error);
           }
@@ -888,9 +891,22 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
       const eventSource = new EventSource('/api/events/stream');
-      eventSource.onmessage = () => {
+      eventSource.onmessage = (event) => {
+          let payload: { timestamp?: number; clientId?: string | null } = {};
+          try {
+              payload = JSON.parse(event.data) as { timestamp?: number; clientId?: string | null };
+          } catch {
+              payload = {};
+          }
+
+          if (payload.clientId && payload.clientId === clientIdRef.current) {
+              setConflictDetected(false);
+              void loadEvents();
+              return;
+          }
+
           const now = Date.now();
-          const likelyOwnUpdate = now - lastLocalSaveAtRef.current < 1500;
+          const likelyOwnUpdate = now - lastLocalSaveAtRef.current < 10000;
           if (localChangeSinceLastLoadRef.current && !likelyOwnUpdate) {
               setConflictDetected(true);
           }

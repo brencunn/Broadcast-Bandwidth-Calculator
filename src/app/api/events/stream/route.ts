@@ -8,8 +8,12 @@ export async function GET(request: Request) {
       const encoder = new TextEncoder();
       const send = (data: string) => controller.enqueue(encoder.encode(data));
 
-      const onUpdate = () => {
-        send(`data: updated\n\n`);
+      const onUpdate = (payload?: { timestamp?: number; clientId?: string | null }) => {
+        const message = {
+          timestamp: payload?.timestamp ?? Date.now(),
+          clientId: payload?.clientId ?? null,
+        };
+        send(`data: ${JSON.stringify(message)}\n\n`);
       };
 
       const keepAlive = setInterval(() => {

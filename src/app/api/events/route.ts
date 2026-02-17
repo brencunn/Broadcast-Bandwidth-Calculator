@@ -13,7 +13,8 @@ export async function GET() {
 export async function PUT(request: Request) {
   const body = await request.json().catch(() => ({}));
   const events = Array.isArray(body?.events) ? (body.events as Event[]) : [];
+  const clientId = typeof body?.clientId === 'string' ? body.clientId : null;
   await saveAllEvents(events);
-  eventBus.emit('events-updated', Date.now());
+  eventBus.emit('events-updated', { timestamp: Date.now(), clientId });
   return NextResponse.json({ ok: true });
 }
